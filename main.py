@@ -3,6 +3,8 @@ import torch
 import argparse
 import datetime
 import numpy as np
+import logging
+import sys
 
 from f3 import init_event_model, load_weights_ckpt
 from f3.utils import (get_dataloaders_from_args, setup_torch, setup_accelerate_experiment,
@@ -35,8 +37,12 @@ def main():
         args.name = f"f3_{datetime.datetime.now().strftime('%Y%m%d-%H%M')}"
     base_path = f"outputs/{args.name}"
     models_path = f"outputs/{args.name}/models"
-    
+
     logger, resume, accelerator, device, gradient_accumulation_steps = setup_accelerate_experiment(args, base_path, models_path)
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setLevel(logging.DEBUG)
+    logger.addHandler(handler)
+    print("Starting experiment:", args.name)
 
     train_loader, val_loader = get_dataloaders_from_args(args, logger)
     logger.info(f"Train datasets: {' '.join(args.train['datasets'])}")
