@@ -115,20 +115,60 @@ class BaseExtractor(Dataset):
         self.max_numevents_ctx = max_numevents_ctx
 
         self.trgt_res = (w, h) #! Important: resolution of the target frame
-        self.trgt_ofs = ((self.trgt_res[0] - self.w) // 2, (self.trgt_res[1] - self.h) // 2) #! Important: offset to center in the target frames
-        #* We want to center the events in the target frame if the resolutions don't
 
         # Boolean mask for the pixels where loss is valid
         self.valid_mask = torch.zeros(self.trgt_res, dtype=torch.bool)
-        self.valid_mask[self.trgt_ofs[0]:self.trgt_ofs[0]+self.w, self.trgt_ofs[1]:self.trgt_ofs[1]+self.h] = True
-        if self.dtype == "dsec":
-            #! black out the 40 pixels along the height of the frame
-            self.valid_mask[:, self.trgt_ofs[1]+self.h-40:self.trgt_ofs[1]+self.h] = False
 
         # Normalization factor for the context events
         self.norm_factor = torch.tensor([
             self.trgt_res[0], self.trgt_res[1], self.time_ctx // self.bucket, 1
         ], dtype=torch.float32)[None, :]
+
+        if self.trgt_res[0] >= self.w and self.trgt_res[1] >= self.h:
+            upsample_res = False
+        elif self.trgt_res[0] < self.w and self.trgt_res[1] < self.h:
+            upsample_res = True
+        else:
+            raise ValueError(f"Target res {self.trgt_res} must be BOTH larger or smaller than raw resolution {(self.w, self.h)}")
+
+        if upsample_res:
+            def get_crop_and_step(raw, des):
+                num_multiples = raw // des
+                crop = (raw - num_multiples * des) // 2
+
+                return crop, num_multiples
+
+            w_crop, w_multiples = get_crop_and_step(self.w, self.trgt_res[0])
+            h_crop, h_multiples = get_crop_and_step(self.h, self.trgt_res[1])
+
+            def raw_px_to_tgt_px(raw_u, raw_v):
+                tgt_x = (raw_u - w_crop) // w_multiples
+                tgt_y = (raw_v - h_crop) // h_multiples
+                return tgt_x, tgt_y
+
+            self.raw_px_to_tgt_px = raw_px_to_tgt_px
+
+            self.valid_mask[...] = True
+
+        else:
+            #! Important: offset to center in the target frames
+            #* We want to center the events in the target frame if the resolutions don't match
+            trgt_ofs = ((self.trgt_res[0] - self.w) // 2, (self.trgt_res[1] - self.h) // 2)
+
+            def raw_px_to_tgt_px(raw_u, raw_v):
+                tgt_x = raw_u + trgt_ofs[0]
+                tgt_y = raw_v + trgt_ofs[1]
+                return tgt_x, tgt_y
+
+            self.raw_px_to_tgt_px = raw_px_to_tgt_px
+
+            self.valid_mask[trgt_ofs[0]:trgt_ofs[0]+self.w, trgt_ofs[1]:trgt_ofs[1]+self.h] = True
+
+        #! black out the bottom 40 pixels along the height of the frame
+        if self.dtype == "dsec":
+            _, start_y = self.raw_px_to_tgt_px(0, self.h-40)
+            _, end_y = self.raw_px_to_tgt_px(0,self.h)
+            self.valid_mask[:, start_y:end_y] = False
 
     def save_metadata(self, fname: str="metadata.json"):
         folder_path = Path(self.hdf5_fp).parent
@@ -159,15 +199,14 @@ class BaseExtractor(Dataset):
                 indices = np.sort(rng.choice(totcnt, size=self.max_numevents_ctx, replace=False, shuffle=False))
             else:
                 indices = np.linspace(0, totcnt, self.max_numevents_ctx, dtype=np.uint64, endpoint=False)
-            ctx[:,0] = self.events_x[si:ei][indices] + self.trgt_ofs[0]
-            ctx[:,1] = self.events_y[si:ei][indices] + self.trgt_ofs[1]
+            ctx[:,0], ctx[:,1] = self.raw_px_to_tgt_px(self.events_x[si:ei][indices], self.events_y[si:ei][indices])
             ctx[:,2] = (t0 - self.events_t[si:ei][indices]) // self.bucket
             ctx[:,3] = self.events_p[si:ei][indices]
         else:
-            ctx[:,0] = self.events_x[si:ei] + self.trgt_ofs[0]
-            ctx[:,1] = self.events_y[si:ei] + self.trgt_ofs[1]
+            ctx[:,0], ctx[:,1] = self.raw_px_to_tgt_px(self.events_x[si:ei], self.events_y[si:ei])
             ctx[:,2] = (t0 - self.events_t[si:ei]) // self.bucket
             ctx[:,3] = self.events_p[si:ei]
+        ctx = self._crop_events(ctx)
         #! Ideally we should get rid of the duplicates caused by the bucketing, but it is expensive
         #! And since we work with 1KHz frames, there aren't many duplicates
         if self.dtype == "mvsec": ctx[:,3][ctx[:,3] == -1] = 0
@@ -179,14 +218,20 @@ class BaseExtractor(Dataset):
         ei = int(self.timestamps[(t0 + self.time_pred) // self.us_to_discretize] - 1)
         totcnt = int(ei - si)
         pred = np.zeros((totcnt, 4), dtype=np.int32)
-        pred[:,0] = self.events_x[si:ei] + self.trgt_ofs[0]
-        pred[:,1] = self.events_y[si:ei] + self.trgt_ofs[1]
+        pred[:, 0], pred[:, 1] = self.raw_px_to_tgt_px(self.events_x[si:ei], self.events_y[si:ei])
         pred[:,2] = (self.events_t[si:ei] - t0) // self.bucket
         pred[:,3] = self.events_p[si:ei].astype(np.int8)
+        pred = self._crop_events(pred)
+
         if self.dtype == "mvsec": pred[:,3][pred[:,3] == -1] = 0
         pred = torch.tensor(pred, dtype=torch.int32)
         return pred, totcnt
 
+    def _crop_events(self, events):
+        valid_x = events[:, 0] >= 0 and events[:, 0] < self.trgt_res[0]
+        valid_y = events[:, 1] >= 0 and events[:, 1] < self.trgt_res[1]
+        events = events[valid_x & valid_y, :]
+        return events
 
 class EventDatasetSingleHDF5(BaseExtractor):
     """
