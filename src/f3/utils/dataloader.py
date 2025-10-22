@@ -210,6 +210,8 @@ class BaseExtractor(Dataset):
             ctx[:,2] = (t0 - self.events_t[si:ei]) // self.bucket
             ctx[:,3] = self.events_p[si:ei]
         ctx = self._crop_events(ctx)
+        _used = ctx.shape[0] # need to update this number after cropping
+
         #! Ideally we should get rid of the duplicates caused by the bucketing, but it is expensive
         #! And since we work with 1KHz frames, there aren't many duplicates
         if self.dtype == "mvsec": ctx[:,3][ctx[:,3] == -1] = 0
@@ -225,6 +227,7 @@ class BaseExtractor(Dataset):
         pred[:,2] = (self.events_t[si:ei] - t0) // self.bucket
         pred[:,3] = self.events_p[si:ei].astype(np.int8)
         pred = self._crop_events(pred)
+        totcnt = pred.shape[0]  # need to update this number after cropping
 
         if self.dtype == "mvsec": pred[:,3][pred[:,3] == -1] = 0
         pred = torch.tensor(pred, dtype=torch.int32)
