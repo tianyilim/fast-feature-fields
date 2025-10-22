@@ -231,9 +231,13 @@ class BaseExtractor(Dataset):
         return pred, totcnt
 
     def _crop_events(self, events):
-        valid_x = events[:, 0] >= 0 and events[:, 0] < self.trgt_res[0]
-        valid_y = events[:, 1] >= 0 and events[:, 1] < self.trgt_res[1]
-        events = events[valid_x & valid_y, :]
+        valid_x = np.logical_and(events[:, 0] >= 0, events[:, 0] < self.trgt_res[0])
+        valid_y = np.logical_and(events[:, 1] >= 0, events[:, 1] < self.trgt_res[1])
+        valid = valid_x & valid_y
+
+        assert valid.shape[0] == events.shape[0], "Valid mask length should be equal to number of events!"
+
+        events = events[valid, :]
         return events
 
 class EventDatasetSingleHDF5(BaseExtractor):
