@@ -143,6 +143,8 @@ class BaseExtractor(Dataset):
 
             w_crop, w_multiples = get_crop_and_step(self.w, self.trgt_res[0])
             h_crop, h_multiples = get_crop_and_step(self.h, self.trgt_res[1])
+            self.logger.info(f"Width crop: {w_crop}, Width multiples: {w_multiples}")
+            self.logger.info(f"Height crop: {h_crop}, Height multiples: {h_multiples}")
 
             def raw_px_to_tgt_px(raw_u, raw_v):
                 tgt_x = (raw_u - w_crop) // w_multiples
