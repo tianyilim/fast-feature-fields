@@ -118,7 +118,7 @@ class BaseExtractor(Dataset):
         self.trgt_ofs = ((self.trgt_res[0] - self.w) // 2, (self.trgt_res[1] - self.h) // 2) #! Important: offset to center in the target frames
         #* We want to center the events in the target frame if the resolutions don't
 
-        # Boolean mask for the pixels where loss is valid        
+        # Boolean mask for the pixels where loss is valid
         self.valid_mask = torch.zeros(self.trgt_res, dtype=torch.bool)
         self.valid_mask[self.trgt_ofs[0]:self.trgt_ofs[0]+self.w, self.trgt_ofs[1]:self.trgt_ofs[1]+self.h] = True
         if self.dtype == "dsec":
@@ -129,7 +129,7 @@ class BaseExtractor(Dataset):
         self.norm_factor = torch.tensor([
             self.trgt_res[0], self.trgt_res[1], self.time_ctx // self.bucket, 1
         ], dtype=torch.float32)[None, :]
-        
+
     def save_metadata(self, fname: str="metadata.json"):
         folder_path = Path(self.hdf5_fp).parent
         # if the file doesnt exist, create it
@@ -193,7 +193,7 @@ class EventDatasetSingleHDF5(BaseExtractor):
         Loads the dataset and timestamps file and returns the context and prediction events
         + creates metadata for the dataset, ensuring that the context is not too small.
     """
-    def __init__(self, hdf5_file: str, timestamps_50khz_file: str, 
+    def __init__(self, hdf5_file: str, timestamps_50khz_file: str,
                  w: int=1280, h: int=720, min_numevents_ctx: int=200000, max_numevents_ctx: int=800000,
                  time_ctx: int=20000, time_pred: int=20000, bucket: int=1000, randomize_ctx: bool=True,
                  camera: str="left", dtype: str="m3ed"):
@@ -304,7 +304,7 @@ def get_dataset_from_h5files(hdf5_files: list[str], timestamps_files: list[str],
         ranges = [[0, 1, 1]] * len(hdf5_files) # default to the whole dataset start, step, stop -> start and stop are fractions
     if dtypes is None:
         dtypes = ["m3ed"] * len(hdf5_files)    # default to m3ed dataset
-    
+
     datasets = [
         EventDatasetSingleHDF5(hdf5_file, timestamps_file, camera=camera, dtype=dtype, **kwargs)
         for hdf5_file, timestamps_file, camera, dtype in zip(hdf5_files, timestamps_files, cameras, dtypes)
