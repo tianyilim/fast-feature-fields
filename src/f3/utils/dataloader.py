@@ -113,6 +113,7 @@ class BaseExtractor(Dataset):
         self.time_pred = time_pred
         self.randomize_ctx = randomize_ctx
         self.max_numevents_ctx = max_numevents_ctx
+        self.metadata = {}
 
         self.trgt_res = (w, h) #! Important: resolution of the target frame
 
