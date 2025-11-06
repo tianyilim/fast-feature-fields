@@ -194,17 +194,37 @@ class MultiResolutionHashEncoder(nn.Module):
         """
         B, N = eventBlock.shape[0], eventBlock.shape[1] # Batch size, Number of events in each batch
         hash_values, nonhash_values, weights = self.index(eventBlock)
-        
+
         # We have a hashmap of size L x T x F where T = 2^log2_entries_per_level, F = feature_size
         # We want to index it with N x L x 8 index tensor. That is, each row in the 1st dim of the index matrix,
         # index into the rows of the hashmap tensor. The 8 corners index into the 1st dim of the hashmap tensor.
         # We don't want to use gather with expand, because in backward pass it goes OOM. Well I don't like loops,
         # but I couldn't find a cleverer way to use gather which doesn't either expand on the N or F dimension.
         hashmap_features = torch.zeros((B, N, self.levels, 2**self.D, self.feature_size), dtype=self.hashmap.dtype, device=eventBlock.device)
+        '''
+        # Original...
         for i in range(self.L_NH):
             hashmap_features[:, :, i, :, :] = self.hashmap[i][nonhash_values[:, :, i, :]]
+        
         for i in range(self.L_H):
             hashmap_features[:, :, i + self.L_NH, :, :] = self.hashmap[i + self.L_NH][hash_values[:, :, i, :]] 
+        '''
+
+        # This should be equivalent to the above snippet, but ONNX-compatible.
+        hashmap_expanded = self.hashmap.unsqueeze(0).unsqueeze(0)             # 1, 1, i, X, k
+        hashmap_expanded = hashmap_expanded.expand(B, N, -1, -1, -1)          # B, N, i, X, k
+        # the index dimension for gather is <j>
+        if self.L_NH > 0:
+            nonhash_idx = nonhash_values.unsqueeze(-1)                            # B, N, i, j, 1
+            nonhash_idx = nonhash_idx.expand(-1, -1, -1, -1, self.feature_size)   # B, N, i, j, k
+            hashmap_features[:, :, :self.L_NH, :, :] = torch.gather(
+                hashmap_expanded[:, :, :self.L_NH, :, :], dim=3, index=nonhash_idx)
+        if self.L_H > 0:
+            hash_idx = hash_values.unsqueeze(-1)                                  # B, N, i, j, 1
+            hash_idx = hash_idx.expand(-1, -1, -1, -1, self.feature_size)         # B, N, i, j, k
+
+            hashmap_features[:, :, self.L_NH:, :, :] = torch.gather(
+                hashmap_expanded[:, :, self.L_NH:, :, :], dim=3, index=hash_idx)
 
         interpolated_features = torch.sum(weights.unsqueeze(-1) * hashmap_features, dim=-2) # B x N x L x F
         interpolated_features = interpolated_features.reshape(B, N, -1) # B x N x (L*F)

@@ -435,15 +435,35 @@ class EventPatchFF(nn.Module):
             currentBlock: torch.Tensor (N, 3/4) N = N1 + N2 + N3 + ... + NB
             eventCounts: torch.Tensor (B,)    [N1, N2, N3, ..., NB]
         """
+
         B = eventCounts.shape[0]
         curr_x = (currentBlock[:,0] * self.w).round().int()
         curr_y = (currentBlock[:,1] * self.h).round().int()
 
         encoded_events = self.multi_hash_encoder(currentBlock.unsqueeze(0)).clone().squeeze(0) # (N,3)/(N,4) -> (N,L*F)
 
-        feature_field = torch.zeros((B, encoded_events.shape[-1], self.w, self.h), device=encoded_events.device, dtype=encoded_events.dtype)
-        batch_indices = torch.repeat_interleave(eventCounts).int() # Offending line, cant compile. I am not spending time on this for now.
-        feature_field[batch_indices, :, curr_x, curr_y] += encoded_events
+        N, F = encoded_events.shape
+        W, H = self.w, self.h
+        WH = W * H
+
+        # 1. Compute global linear indices for each event
+        batch_idx = torch.repeat_interleave(eventCounts)
+        lin_idx = curr_x * self.h + curr_y # note, this is different from "NCHW" images (N,)
+        global_idx = batch_idx * WH + lin_idx          # (N,)
+
+        # 2. Prepare scatter indices and features
+        global_idx_exp = global_idx.unsqueeze(0).expand(F, -1)  # (F, N)
+        encoded_T = encoded_events.T                            # (F, N)
+
+        # 3. Flatten feature_field: (F, B*WH)
+        feature_field_flat = torch.zeros(F, B*WH, device=encoded_events.device, dtype=encoded_events.dtype)
+
+        # 4. Scatter-add features
+        feature_field_flat = feature_field_flat.scatter_add(1, global_idx_exp, encoded_T)
+
+        # 5. Reshape back to (B, F, W, H)
+        feature_field = feature_field_flat.view(F, B, W, H).permute(1, 0, 2, 3)
+
         return feature_field
 
     def forward_loss(self, logits: torch.Tensor, futureBlock: torch.Tensor, valid_mask: torch.Tensor) -> torch.Tensor:
@@ -477,8 +497,10 @@ class EventPatchFF(nn.Module):
         if self.return_feat:
             feat = x.permute(0, 2, 3, 1)
 
-        if  not self.return_logits and self.return_feat:
-            return None, feat
+        # Edited, for downstream tasks
+        if not self.return_logits and self.return_feat:
+            return feat
+            # return None, feat
 
         if self.use_decoder_block:
             x = self.decoder(x)
