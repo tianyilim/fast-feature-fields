@@ -366,6 +366,9 @@ class EventPatchFF(nn.Module):
         320, 180, 128  -> 1x1 Conv 128 -> 16x16xT
         """
         
+        # for tracing
+        self._onnx_tracing = False
+
     def _init_weights(self, m):
         if isinstance(m, (nn.Conv2d, nn.Linear)):
             trunc_normal_(m.weight, std=.02)
@@ -499,8 +502,10 @@ class EventPatchFF(nn.Module):
 
         # Edited, for downstream tasks
         if not self.return_logits and self.return_feat:
-            return feat
-            # return None, feat
+            if self._onnx_tracing:
+                return feat
+            else:
+                return None, feat
 
         if self.use_decoder_block:
             x = self.decoder(x)

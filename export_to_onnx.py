@@ -47,6 +47,7 @@ eventff_model_compilied.load_state_dict(
             torch.load(Path(BASE_F3_MODEL_PATH) / F3_MODEL_NAME, map_location="cpu", weights_only=True)['model'])
 eventff_model.cuda().eval()
 print(f"Loaded F3 model ckpt from {F3_MODEL_NAME}")
+eventff_model._onnx_tracing = True
 
 # Get example data for tracing
 IMG_IDX = 700
@@ -72,8 +73,7 @@ torch.onnx.export(eventff_model, (ctx, totcnt),
                   output_names=["feats"],
                   dynamic_shapes={'currentBlock': {0: Dim.DYNAMIC, 1: Dim.STATIC}, 'eventCounts':{0: Dim.DYNAMIC}},
                   dynamo=True,
-                  verbose=False,
-                  opset_version=17
+                  verbose=False
                  )
 print(f"Exported to file [{out_file}]")
 
