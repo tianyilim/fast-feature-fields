@@ -71,6 +71,8 @@ torch.onnx.export(eventff_model, (ctx, totcnt),
                   f=out_file,
                   input_names=["currentBlock", "eventCounts"],
                   output_names=["feats"],
+                  # dynamic_axes={'currentBlock': {0: "numEvents"}, 'eventCounts':{0: "batch"}},
+                  # dynamo=False,
                   dynamic_shapes={'currentBlock': {0: Dim.DYNAMIC, 1: Dim.STATIC}, 'eventCounts':{0: Dim.DYNAMIC}},
                   dynamo=True,
                   verbose=False

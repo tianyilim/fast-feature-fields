@@ -201,16 +201,18 @@ class MultiResolutionHashEncoder(nn.Module):
         # We don't want to use gather with expand, because in backward pass it goes OOM. Well I don't like loops,
         # but I couldn't find a cleverer way to use gather which doesn't either expand on the N or F dimension.
         hashmap_features = torch.zeros((B, N, self.levels, 2**self.D, self.feature_size), dtype=self.hashmap.dtype, device=eventBlock.device)
-        '''
-        # Original...
+        # Original, but can't export to ONNX (index issues)
+        # '''
         for i in range(self.L_NH):
             hashmap_features[:, :, i, :, :] = self.hashmap[i][nonhash_values[:, :, i, :]]
         
         for i in range(self.L_H):
             hashmap_features[:, :, i + self.L_NH, :, :] = self.hashmap[i + self.L_NH][hash_values[:, :, i, :]] 
-        '''
+        # '''
 
         # This should be equivalent to the above snippet, but ONNX-compatible.
+        # But expand is bad in ONNX, as it tries to allocate a real BxNx... tensor, which explodes in VRAM.
+        '''
         hashmap_expanded = self.hashmap.unsqueeze(0).unsqueeze(0)             # 1, 1, i, X, k
         hashmap_expanded = hashmap_expanded.expand(B, N, -1, -1, -1)          # B, N, i, X, k
         # the index dimension for gather is <j>
@@ -225,6 +227,7 @@ class MultiResolutionHashEncoder(nn.Module):
 
             hashmap_features[:, :, self.L_NH:, :, :] = torch.gather(
                 hashmap_expanded[:, :, self.L_NH:, :, :], dim=3, index=hash_idx)
+        '''
 
         interpolated_features = torch.sum(weights.unsqueeze(-1) * hashmap_features, dim=-2) # B x N x L x F
         interpolated_features = interpolated_features.reshape(B, N, -1) # B x N x (L*F)
