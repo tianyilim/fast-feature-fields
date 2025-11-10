@@ -30,4 +30,6 @@ for folder in $base_path/*; do
     else
         echo "MISSING: $seq_h5"
     fi
+    # Make symlink to our data folder
+    ln -s $folder data/$seq_name
 done
