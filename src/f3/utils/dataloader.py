@@ -21,7 +21,7 @@ class BaseExtractor(Dataset):
         Takes in the hdf5 file and timestamps and has functions to get events
         at any time interval
     """
-    def __init__(self, hdf5_file: str, timestamps_50khz_file: Optional[str]=None,
+    def __init__(self, hdf5_file: str, timestamps_50khz_file: str,
                  w: int=1280, h: int=720,
                  time_ctx: int=20000, time_pred: int=20000, bucket: int=1000, max_numevents_ctx: int=800000,
                  randomize_ctx: bool=True, camera: str="left", dtype: str="m3ed"):
