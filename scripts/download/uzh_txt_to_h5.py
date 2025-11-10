@@ -20,7 +20,8 @@ def main(args):
         h5_out_file = txt_parent / f"{txt_parent.stem}.h5"
 
         if h5_out_file.exists():
-            print(f"HDF5 file {h5_out_file} already exists, skipping processing.")
+            print(
+                f"HDF5 file {h5_out_file} already exists, skipping processing.")
             continue
 
         print("Will write to", h5_out_file)
@@ -60,8 +61,12 @@ def main(args):
         len_data = len(timestamps)
         assert len_data == len(xs) == len(ys) == len(pols)
         print(f"Read {len_data} events.")
-        # timestamps start with zero
+        # timestamps start will start with zero
         timestamps = [t-timestamps[0] for t in timestamps]
+
+        ds_duration = timestamps[-1]-timestamps[0]
+        assert ds_duration == timestamps[-1] # sanity check that zero-starting timestamps are handled
+        print(f"Read dataset {ds_duration/1e6:.3f}s long.")
 
         # Write to h5 file.
         with h5py.File(h5_out_file, 'w') as h5f:
