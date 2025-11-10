@@ -1,6 +1,5 @@
 import h5py
 import argparse
-import hdf5plugin
 import numpy as np
 from tqdm import tqdm
 
@@ -14,24 +13,27 @@ parser.add_argument("--dataset", type=str, default="m3ed", choices=["m3ed", "dse
 args = parser.parse_args()
 
 
-def gen_ts(camera):
+def gen_ts(camera: str):
     if args.dataset == "m3ed":
         events_t = h5py.File(args.data_h5, 'r')[f'/prophesee/{camera}/t']
     elif args.dataset == "dsec":
         events_t = h5py.File(f'{args.data_h5}/events/{camera}/events.h5', 'r')['events/t']
     elif args.dataset == "mvsec":
         events_t = h5py.File(args.data_h5, 'r')[f'/davis/{camera}/events/t']
+    elif args.dataset == "uzhfpv":
+        events_t = h5py.File(args.data_h5, 'r')[f'/events/t']
     else:
         raise ValueError("Invalid dataset")
-    
+
+    assert isinstance(events_t, h5py.Dataset)
+
     timeblocks = int(args.bucket)
     FREQ = 1e6/timeblocks
-    num_ts = int(events_t[-1]/timeblocks)
+    sequence_duration_us = events_t[-1] - events_t[0]
+    num_ts = int(sequence_duration_us/timeblocks)
 
     print("Frequency generated (in Hz): ", FREQ)
-    print("Total time (in s): ", events_t[-1]/1e6)
-
-    totaltime = events_t[-1]
+    print(f"Total time (in s): {sequence_duration_us/1e6:.3f}")
 
     def return_index(start_index, till_when):
         start_event_index = start_index
@@ -48,7 +50,7 @@ def gen_ts(camera):
 
     TS = np.zeros((num_ts,), dtype=np.uint64)
     start_index = 0
-    for block in tqdm(range(0, totaltime//timeblocks)):
+    for block in tqdm(range(0, num_ts)):
         end_index = return_index(start_index, timeblocks*block)
         start_index = end_index
         TS[block] = end_index
@@ -65,16 +67,22 @@ def main():
     elif args.dataset == "mvsec":
         path = args.data_h5.rsplit("/", 1)[0]
         name = args.data_h5.split("/")[-1].replace(".hdf5", "")
+    elif args.dataset == "uzhfpv":
+        path = args.data_h5.rsplit("/", 1)[0]
+        name = args.data_h5.split("/")[-1].replace(".h5", "")
     else:
         raise ValueError("Invalid dataset")
 
-    TS_LEFT = gen_ts("left")
-    TS_RIGHT = gen_ts("right")
+    if not args.dataset == "uzhfpv":
+        TS_LEFT = gen_ts("left")
+        TS_RIGHT = gen_ts("right")
+        TS = {"left": TS_LEFT, "right": TS_RIGHT}
+    else:
+        TS_LEFT = gen_ts("") # This dataset is monocular, but we just use "left" as convention
+        TS = {"left": TS_LEFT}
 
-    TS = {"left": TS_LEFT, "right": TS_RIGHT}
     np.save(f"{path}/50khz_{name}.npy", TS)
 
 
 if __name__ == "__main__":
     main()
-
