@@ -8,7 +8,7 @@ parser = argparse.ArgumentParser()
 
 parser.add_argument("--data_h5", required=True, type=str, help="H5 file path with sensor data or the parent folder in case of dsec")
 parser.add_argument("--bucket", type=int, default=20, help="Bucket size in us")
-parser.add_argument("--dataset", type=str, default="m3ed", choices=["m3ed", "dsec", "mvsec"], help="Dataset name")
+parser.add_argument("--dataset", type=str, default="m3ed", choices=["m3ed", "dsec", "mvsec", "uzhfpv"], help="Dataset name")
 
 args = parser.parse_args()
 
