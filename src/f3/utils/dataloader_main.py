@@ -30,20 +30,22 @@ def main(args):
         if idx not in indices_to_choose:
             continue
 
-        ctx, pred, totcnt_ctx, totcnt_pred, valid_mask = data
+        ctx, pred, totcnt_ctx, totcnt_pred, valid_mask_tensor = data
         ctx_frame = ev_to_frames(ctx, totcnt_ctx,
                                  args.frame_sizes[0], args.frame_sizes[1]
                                  )[0].cpu().numpy().T
         pred_frame = ev_to_frames(pred, totcnt_pred,
                                   args.frame_sizes[0], args.frame_sizes[1]
                                   )[0].cpu().numpy().T
+        valid_mask = valid_mask_tensor.cpu().numpy().T.astype(int)
+        valid_mask *= 255
 
         fig, axs = plt.subplots(1, 3, figsize=(12, 5))
         axs[0].imshow(ctx_frame, cmap="gray")
         axs[0].set_title("Context Events")
         axs[1].imshow(pred_frame, cmap="gray")
         axs[1].set_title("Predict Events")
-        axs[2].imshow(valid_mask.cpu().numpy().T, cmap="gray")
+        axs[2].imshow(valid_mask, cmap="gray")
         axs[2].set_title("Valid Mask")
         fig.suptitle(f"Frame {idx}/{len(dataset)}")
         plt.tight_layout()
