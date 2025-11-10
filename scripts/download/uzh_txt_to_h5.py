@@ -60,6 +60,8 @@ def main(args):
         len_data = len(timestamps)
         assert len_data == len(xs) == len(ys) == len(pols)
         print(f"Read {len_data} events.")
+        # timestamps start with zero
+        timestamps = [t-timestamps[0] for t in timestamps]
 
         # Write to h5 file.
         with h5py.File(h5_out_file, 'w') as h5f:
