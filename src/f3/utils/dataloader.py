@@ -5,6 +5,7 @@ import logging
 import numpy as np
 from tqdm import tqdm
 from pathlib import Path
+from typing import Optional
 
 import torch
 from torch.utils.data import Dataset, DataLoader
@@ -20,7 +21,8 @@ class BaseExtractor(Dataset):
         Takes in the hdf5 file and timestamps and has functions to get events
         at any time interval
     """
-    def __init__(self, hdf5_file: str, timestamps_50khz_file: str=None, w: int=1280, h: int=720,
+    def __init__(self, hdf5_file: str, timestamps_50khz_file: Optional[str]=None,
+                 w: int=1280, h: int=720,
                  time_ctx: int=20000, time_pred: int=20000, bucket: int=1000, max_numevents_ctx: int=800000,
                  randomize_ctx: bool=True, camera: str="left", dtype: str="m3ed"):
         """
@@ -342,7 +344,7 @@ class EventDatasetSingleHDF5(BaseExtractor):
             }
             self.save_metadata()
 
-    def load_metadata(self, keys: list[str]=None, fname: str="metadata.json"):
+    def load_metadata(self, keys: Optional[list[str]]=None, fname: str="metadata.json"):
         if keys is None:
             keys = ["camera", "min_numevents_ctx", "time_ctx", "time_pred"]
         try:
@@ -365,13 +367,16 @@ class EventDatasetSingleHDF5(BaseExtractor):
 
 
 #! The following code is pretty redundant for the main feature field and the sub tasks.
-def get_dataset_from_h5files(hdf5_files: list[str], timestamps_files: list[str], cameras: list[str]=None,
-                             dtypes: list[str]=None, ranges: list[list[float, int, float]]=None, **kwargs):
+def get_dataset_from_h5files(hdf5_files: list[str], timestamps_files: list[str],
+                             cameras: Optional[list[str]]=None,
+                             dtypes: Optional[list[str]]=None,
+                             ranges: Optional[list[tuple[float, int, float]]]=None,
+                             **kwargs):
     assert len(hdf5_files) == len(timestamps_files), "The number of hdf5 files and timestamps files should be the same!"
     if cameras is None:
         cameras = ["left"] * len(hdf5_files)   # default to left camera
     if ranges is None:
-        ranges = [[0, 1, 1]] * len(hdf5_files) # default to the whole dataset start, step, stop -> start and stop are fractions
+        ranges = [(0., 1, 1.)] * len(hdf5_files) # default to the whole dataset start, step, stop -> start and stop are fractions
     if dtypes is None:
         dtypes = ["m3ed"] * len(hdf5_files)    # default to m3ed dataset
 
@@ -386,7 +391,7 @@ def get_dataset_from_h5files(hdf5_files: list[str], timestamps_files: list[str],
     return torch.utils.data.ConcatDataset(subsets)
 
 
-def get_dataloader_from_args(args: dict, logger: logging.Logger, shuffle: bool=True, train: bool=True):
+def get_dataloader_from_args(args, logger: logging.Logger, shuffle: bool=True, train: bool=True):
     mode = "Training" if train else "Validation"
     config = args.train if train else args.val
     randomize_ctx = args.randomize_ctx if train else False
