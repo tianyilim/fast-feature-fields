@@ -2,7 +2,6 @@ import h5py
 import json
 import yaml
 import logging
-import hdf5plugin
 import numpy as np
 from tqdm import tqdm
 from pathlib import Path
@@ -83,28 +82,42 @@ class BaseExtractor(Dataset):
         if dtype == "m3ed":
             # We use the "camera" event camera
             self.w, self.h = 1280, 720  #! Important: resolution in the dataset
-            self.events_x = self.hdf5_file[f"prophesee/{camera}/x"]
-            self.events_y = self.hdf5_file[f"prophesee/{camera}/y"]
-            self.events_t = self.hdf5_file[f"prophesee/{camera}/t"]
-            self.events_p = self.hdf5_file[f"prophesee/{camera}/p"]
+            self.events_x: h5py.Dataset = self.hdf5_file[f"prophesee/{camera}/x"] # type: ignore
+            self.events_y: h5py.Dataset = self.hdf5_file[f"prophesee/{camera}/y"] # type: ignore
+            self.events_t: h5py.Dataset = self.hdf5_file[f"prophesee/{camera}/t"] # type: ignore
+            self.events_p: h5py.Dataset = self.hdf5_file[f"prophesee/{camera}/p"] # type: ignore
         elif dtype == "dsec":
             self.w, self.h = 640, 480   #! Important: resolution in the dataset
-            self.events_x = self.hdf5_file[f"events/x"]
-            self.events_y = self.hdf5_file[f"events/y"]
-            self.events_t = self.hdf5_file[f"events/t"]
-            self.events_p = self.hdf5_file[f"events/p"]
+            self.events_x: h5py.Dataset = self.hdf5_file[f"events/x"] # type: ignore
+            self.events_y: h5py.Dataset = self.hdf5_file[f"events/y"] # type: ignore
+            self.events_t: h5py.Dataset = self.hdf5_file[f"events/t"] # type: ignore
+            self.events_p: h5py.Dataset = self.hdf5_file[f"events/p"] # type: ignore
         elif dtype == "mvsec":
             self.w, self.h = 346, 260   #! Important: resolution in the dataset
-            self.events_x = self.hdf5_file[f"davis/{camera}/events/x"]
-            self.events_y = self.hdf5_file[f"davis/{camera}/events/y"]
-            self.events_t = self.hdf5_file[f"davis/{camera}/events/t"]
-            self.events_p = self.hdf5_file[f"davis/{camera}/events/p"]
+            self.events_x: h5py.Dataset = self.hdf5_file[f"davis/{camera}/events/x"] # type: ignore
+            self.events_y: h5py.Dataset = self.hdf5_file[f"davis/{camera}/events/y"] # type: ignore
+            self.events_t: h5py.Dataset = self.hdf5_file[f"davis/{camera}/events/t"] # type: ignore
+            self.events_p: h5py.Dataset = self.hdf5_file[f"davis/{camera}/events/p"] # type: ignore
+        elif dtype == "uzhfpv":
+            self.w, self.h = 346, 260   #! Important: resolution in the dataset
+            self.events_x: h5py.Dataset = self.hdf5_file[f"events/x"] # type: ignore
+            self.events_y: h5py.Dataset = self.hdf5_file[f"events/y"] # type: ignore
+            self.events_t: h5py.Dataset = self.hdf5_file[f"events/t"] # type: ignore
+            self.events_p: h5py.Dataset = self.hdf5_file[f"events/p"] # type: ignore
         elif dtype == "tartanair-v2":
             self.w, self.h = 640, 640   #! Important: resolution in the dataset
-            self.events_x = self.hdf5_file["events/x"]
-            self.events_y = self.hdf5_file["events/y"]
-            self.events_t = H5WithLazyDivision(self.hdf5_file["events/t"], 1000) # convert ns to us
-            self.events_p = self.hdf5_file["events/p"]
+            self.events_x: h5py.Dataset = self.hdf5_file["events/x"] # type: ignore
+            self.events_y: h5py.Dataset = self.hdf5_file["events/y"] # type: ignore
+            self.events_t: h5py.Dataset = H5WithLazyDivision(self.hdf5_file["events/t"], 1000) # convert ns to us
+            self.events_p: h5py.Dataset = self.hdf5_file["events/p"] # type: ignore
+        else:
+            raise ValueError(f"Invalid dtype: {dtype}! Should be either m3ed or dsec or mvsec!")
+
+        assert isinstance(self.events_x, h5py.Dataset)
+        assert isinstance(self.events_y, h5py.Dataset)
+        assert isinstance(self.events_t, h5py.Dataset)
+        assert isinstance(self.events_p, h5py.Dataset)
+        assert self.events_t[0] == 0, "First timestamp is not zero. This breaks some of the assumptions in this repo."
 
         self.dtype = dtype
         self.camera = camera
