@@ -4,6 +4,7 @@
 .idea
 __pycache__/
 .venv/
+.ipynb_checkpoints/
 
 data/*
 !data/README.md
