@@ -113,7 +113,7 @@ class BaseExtractor(Dataset):
             self.events_t: h5py.Dataset = H5WithLazyDivision(self.hdf5_file["events/t"], 1000) # convert ns to us
             self.events_p: h5py.Dataset = self.hdf5_file["events/p"] # type: ignore
         else:
-            raise ValueError(f"Invalid dtype: {dtype}! Should be either m3ed or dsec or mvsec!")
+            raise ValueError(f"Invalid dtype: {dtype}! Should be either m3ed or dsec or mvsec or uzhfpv!")
 
         assert isinstance(self.events_x, h5py.Dataset)
         assert isinstance(self.events_y, h5py.Dataset)
@@ -130,7 +130,7 @@ class BaseExtractor(Dataset):
         self.max_numevents_ctx = max_numevents_ctx
         self.metadata = {}
 
-        self.trgt_res = (w, h) #! Important: resolution of the target frame
+        self.trgt_res = (w, h) #! Important: resolution of the output frame
 
         # Boolean mask for the pixels where loss is valid
         self.valid_mask = torch.zeros(self.trgt_res, dtype=torch.bool)
@@ -142,14 +142,15 @@ class BaseExtractor(Dataset):
 
         if self.trgt_res[0] >= self.w and self.trgt_res[1] >= self.h:
             self.logger.info(f"Target res {self.trgt_res}, raw resolution {(self.w, self.h)}, downsampling resolution mode!")
-            upsample_res = False
+            to_downsample = False
         elif self.trgt_res[0] < self.w and self.trgt_res[1] < self.h:
             self.logger.info(f"Target res {self.trgt_res}, raw resolution {(self.w, self.h)}, upsampling resolution mode!")
-            upsample_res = True
+            to_downsample = True
         else:
             raise ValueError(f"Target res {self.trgt_res} must be BOTH larger or smaller than raw resolution {(self.w, self.h)}")
 
-        if upsample_res:
+        if to_downsample:
+            # The target res. is smaller than the raw resolution.
             def get_crop_and_step(raw, des):
                 num_multiples = raw // des
                 crop = (raw - num_multiples * des) // 2
@@ -171,6 +172,8 @@ class BaseExtractor(Dataset):
             self.valid_mask[...] = True
 
         else:
+            # The target res. is larger than the raw resolution.
+
             #! Important: offset to center in the target frames
             #* We want to center the events in the target frame if the resolutions don't match
             trgt_ofs = ((self.trgt_res[0] - self.w) // 2, (self.trgt_res[1] - self.h) // 2)

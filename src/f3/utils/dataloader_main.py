@@ -31,15 +31,22 @@ def main(args):
             continue
 
         ctx, pred, totcnt_ctx, totcnt_pred, valid_mask = data
-        events_frame = ev_to_frames(
-            ctx, totcnt_ctx,
-            args.frame_sizes[0], args.frame_sizes[1]
-        )[0].cpu().numpy().T
+        ctx_frame = ev_to_frames(ctx, totcnt_ctx,
+                                 args.frame_sizes[0], args.frame_sizes[1]
+                                 )[0].cpu().numpy().T
+        pred_frame = ev_to_frames(pred, totcnt_pred,
+                                  args.frame_sizes[0], args.frame_sizes[1]
+                                  )[0].cpu().numpy().T
 
-        plt.figure()
-        plt.imshow(events_frame)
-        plt.title(f"Frame {idx}/{len(dataset)}")
-        plt.axis("off")
+        fig, axs = plt.subplots(1, 3, figsize=(12, 5))
+        axs[0].imshow(ctx_frame, cmap="gray")
+        axs[0].set_title("Context Events")
+        axs[1].imshow(pred_frame, cmap="gray")
+        axs[1].set_title("Predict Events")
+        axs[2].imshow(valid_mask.cpu().numpy().T, cmap="gray")
+        axs[2].set_title("Valid Mask")
+        fig.suptitle(f"Frame {idx}/{len(dataset)}")
+        plt.tight_layout()
         plt.savefig(f"dataset_frame_{idx:06d}.png")
         plt.close()
 
