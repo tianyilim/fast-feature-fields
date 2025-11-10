@@ -275,7 +275,7 @@ if __name__ == "__main__":
                 for filename, file in download_files.items()
             }
 
-            for future in tqdm.tqdm(as_completed(futures), total=len(futures)):
+            for future in tqdm.tqdm(as_completed(futures), total=len(futures), dynamic_ncols=True):
                 future.result()
 
         '''
