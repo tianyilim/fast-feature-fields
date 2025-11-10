@@ -5,6 +5,8 @@ import sys
 import pdb
 import os
 import tqdm
+from typing import Optional, Dict, List
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 BASE_URL = "https://m3ed-dist.s3.us-west-2.amazonaws.com"
 DATASETS_LIST_URL = "https://raw.githubusercontent.com/daniilidis-group/m3ed/main/dataset_list.yaml"
@@ -30,12 +32,23 @@ def download_file_with_progress(url, local_path):
             progress_bar.update(len(data))
 
 
-class M3ED_File():
-    def __init__(self, filename):
-        self.filename = filename
-        self.download_links = None
+def download_file_with_no_progress(url, local_path):
+    response = requests.get(url, stream=True)
+    # Get the total file size from the response headers
+    total_size = int(response.headers.get("content-length", 0))
+    with open(local_path, "wb") as local_file:
+        for data in response.iter_content(chunk_size=1024):
+            local_file.write(data)
 
-    def download(self, output_dir, to_download):
+
+class M3ED_File():
+    def __init__(self, filename: str):
+        self.filename = filename
+        self.download_links: Optional[Dict[str, str]] = None
+
+    def download(self, output_dir: str, to_download: List[str]):
+        assert self.download_links is not None
+
         self.check_download(to_download)
         for download in self.download_links:
             if download not in to_download:
@@ -47,10 +60,17 @@ class M3ED_File():
             if not os.path.exists(path):
                 os.makedirs(path)
             filepath = os.path.join(path, filename)
-            print(f"Downloading {filename} into {filepath}")
-            download_file_with_progress(link, filepath)
 
-    def check_download(self, to_download):
+            if os.path.exists(filepath):
+                print(f"File {filepath} already exists, skipping download.")
+                continue
+
+            print(f"Downloading {filename} into {filepath}")
+            # download_file_with_progress(link, filepath)
+            download_file_with_no_progress(link, filepath)
+
+
+    def check_download(self, to_download: List[str]):
         if self.download_links is None:
             raise ValueError("Download links not initialized")
         empty = True
@@ -64,7 +84,7 @@ class M3ED_File():
 
 
 class M3ED_Data_File(M3ED_File):
-    def __init__(self, filename, config_file):
+    def __init__(self, filename: str, config_file):
         super().__init__(filename)
         self.download_links = {}
 
@@ -247,7 +267,19 @@ if __name__ == "__main__":
         pdb.set_trace()
         sys.exit("No files to download with the required filters")
 
-    # Download all the files
+    # Download all the files in parallel
     if not args.no_download:
+        with ThreadPoolExecutor(max_workers=16) as executor:
+            futures = {
+                executor.submit(file.download, output_dir, to_download): filename
+                for filename, file in download_files.items()
+            }
+
+            for future in tqdm.tqdm(as_completed(futures), total=len(futures)):
+                future.result()
+
+        '''
+        # Original serial download
         for filename, file in download_files.items():
             file.download(output_dir, to_download)
+        '''
