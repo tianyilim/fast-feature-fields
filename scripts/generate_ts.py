@@ -27,9 +27,11 @@ def gen_ts(camera: str):
 
     assert isinstance(events_t, h5py.Dataset)
 
+    assert events_t[0] == 0, "First timestamp is not zero. This breaks some of the assumptions in this repo."
+
     timeblocks = int(args.bucket)
     FREQ = 1e6/timeblocks
-    sequence_duration_us = events_t[-1] - events_t[0]
+    sequence_duration_us = events_t[-1]
     num_ts = int(sequence_duration_us/timeblocks)
 
     print("Frequency generated (in Hz): ", FREQ)
