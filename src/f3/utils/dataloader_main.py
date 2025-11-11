@@ -15,7 +15,7 @@ import yaml
 from f3.utils import ev_to_frames
 from f3.utils.dataloader import get_dataloaders_from_args
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("__main__")
 logging.basicConfig(format='%(levelname)-8s: %(message)s')
 logger.setLevel(logging.DEBUG)
 
