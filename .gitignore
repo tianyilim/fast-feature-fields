@@ -10,6 +10,7 @@ data/*
 !data/README.md
 
 wandb/
+logs/
 build/
 outputs*/
 dist/
