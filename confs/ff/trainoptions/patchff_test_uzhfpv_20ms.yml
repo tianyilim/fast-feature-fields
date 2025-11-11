@@ -10,14 +10,14 @@ polarity: [False, False] # Use polarity for the training
 train:
   num_workers: 4 # Number of workers for the dataloader
   batch: 8 # Batch size of event blocks tuned to a 24GB GPU
-  mini_batch: 1 # Mini batch size of events
+  mini_batch: 8 # Mini batch size of events
   datasets:
   - confs/ff/dataoptions/test_uzhpfv_train_20ms.yml
 
 val:
   num_workers: 4 # Number of workers for the dataloader
   batch: 8 # Batch size of event blocks
-  mini_batch: 1 # Mini batch size of events
+  mini_batch: 4 # Mini batch size of events
   datasets:
   - confs/ff/dataoptions/test_uzhpfv_train_20ms.yml
 
