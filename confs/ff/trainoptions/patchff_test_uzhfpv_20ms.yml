@@ -19,7 +19,7 @@ val:
   batch: 8 # Batch size of event blocks
   mini_batch: 4 # Mini batch size of events
   datasets:
-  - confs/ff/dataoptions/test_uzhpfv_train_20ms.yml
+  - confs/ff/dataoptions/test_uzhpfv_val_20ms.yml
 
 randomize_ctx: True
 min_numevents_ctx: 10000  # Number of events to use for the context

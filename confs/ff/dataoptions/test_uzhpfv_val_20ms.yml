@@ -1,0 +1,7 @@
+datasets:
+
+- dataset_path: data/indoor_forward_8_davis/indoor_forward_8_davis.h5
+  timestamps_path: data/indoor_forward_8_davis/50khz_indoor_forward_8_davis.npy
+  camera: left
+  dtype: uzhfpv
+  range: [0, 4, 1]
