@@ -129,6 +129,7 @@ class BaseExtractor(Dataset):
         assert isinstance(self.events_y, h5py.Dataset)
         assert isinstance(self.events_t, h5py.Dataset)
         assert isinstance(self.events_p, h5py.Dataset)
+
         assert self.events_t[0] < time_ctx, f"First timestamp {self.events_t[0]}>={time_ctx}. This breaks some of the assumptions in this repo."
 
         self.dtype = dtype
