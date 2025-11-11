@@ -1,7 +1,9 @@
+import sys
 import os
 import yaml
 import wandb
 import logging
+from copy import deepcopy
 
 import torch
 import torch._dynamo
@@ -77,7 +79,8 @@ def setup_accelerate_experiment(args, base_path: str, models_path: str):
     else:
         experiment_tracker = None
     accelerator = Accelerator(gradient_accumulation_steps=gradient_accumulation_steps,
-                              log_with=experiment_tracker)
+                              log_with=experiment_tracker,
+                              project_dir="./logs")
     device = accelerator.device
 
     assert args.train["batch"] % args.train["mini_batch"] == 0, "train_batch should be divisible by mini_batch"
@@ -89,8 +92,14 @@ def setup_accelerate_experiment(args, base_path: str, models_path: str):
             os.makedirs(f"{base_path}/{dir}", exist_ok=True)
 
     logging.basicConfig(filename=f"{base_path}/exp.log", filemode="a",
-                        level=logging.INFO, format="%(asctime)s - %(message)s")
+                        level=logging.DEBUG, format="%(levelname)-8s: [%(asctime)s] - %(message)s")
     logger = logging.getLogger(__name__)
+    '''
+    stdout_handler = logging.StreamHandler(sys.stdout)
+    stdout_handler.setLevel(logging.INFO)
+    stdout_handler.setFormatter(logging.Formatter("%(levelname)-8s: %(message)s"))
+    logger.addHandler(stdout_handler)
+    '''
     logger.info(f"Starting experiment: {args.name}, with SLURM jobid: {os.environ.get('SLURM_JOB_ID', None)}")
 
     if args.wandb:
@@ -104,7 +113,18 @@ def setup_accelerate_experiment(args, base_path: str, models_path: str):
                                       init_kwargs={"wandb": {"name": args.name, "id": args.wandb_run_id}})
         logger.info(f"Logging to wandb with name: {args.name} and run_id: {args.wandb_run_id}")
     elif args.tensorboard:
-        accelerator.init_trackers(project_name="f3", config=args)
+        args_dict = deepcopy(args.__dict__)
+        keys_to_delete = []
+        for k, v in args_dict.items():
+            allowed_types = (int, float, str, bool, torch.Tensor)
+            if not isinstance(v, allowed_types):
+                logger.warning(f"{k} is of invalid {type(v)}, deleting...\n{v}")
+                keys_to_delete.append(k)
+            else:
+                logger.info(f"{k}: {type(v)} {v}")
+        for k in keys_to_delete:
+            del args_dict[k]
+        accelerator.init_trackers(project_name=f"{args.name}", config=args_dict)
         logger.info(f"Logging to tensorboard with name: {args.name}")
 
     if not resume:
