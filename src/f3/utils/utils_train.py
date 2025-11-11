@@ -49,7 +49,7 @@ def train_fixed_time(args, eff, train_loader, optimizer, scheduler, epoch,
                 train_f1 += f1
                 logger.info(f"Epoch: {epoch}, Idx: {(idx+1)//iters_to_accumulate}, Loss: {iter_loss}, " +\
                             f"Acc: {acc}, pos_acc: {tp/(tp+fn)}, neg_acc: {tn/(tn+fp)}")
-                if args.wandb or args.tensorboard:
+                if args.wandb:
                     accelerator.log({"acc": acc, "loss": iter_loss, "neg_acc": tn/(tn+fp),
                                      "pos_acc": tp/(tp+fn), "lr": scheduler.get_last_lr()[0]})
                 tp, tn, fp, fn, iter_loss = 0, 0, 0, 0, 0
