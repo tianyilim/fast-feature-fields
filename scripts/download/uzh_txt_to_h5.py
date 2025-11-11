@@ -64,8 +64,9 @@ def main(args):
         # timestamps start will start with zero
         timestamps = [t-timestamps[0] for t in timestamps]
 
-        ds_duration = timestamps[-1]-timestamps[0]
-        assert ds_duration == timestamps[-1] # sanity check that zero-starting timestamps are handled
+        ds_duration = timestamps[-1] - timestamps[0]
+        # sanity check that zero-starting timestamps are handled
+        assert ds_duration == timestamps[-1]
         print(f"Read dataset {ds_duration/1e6:.3f}s long.")
 
         # Write to h5 file.
