@@ -78,7 +78,7 @@ def validate_fixed_time(args, eff, val_loader, epoch,
         logger.info(f"Validation: Epoch: {epoch}, Loss: {val_loss}, Acc: {val_acc}, F1: {val_f1}")
         logger.info("#"*50)
 
-        if args.wandb:
+        if args.wandb or args.tensorboard:
             accelerator.log({"val_acc": val_acc, "val_loss": val_loss, "val_f1": val_f1, "epoch": epoch})
 
     eff.train()
