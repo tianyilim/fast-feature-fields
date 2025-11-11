@@ -81,6 +81,9 @@ class BaseExtractor(Dataset):
                 raise ValueError("⚠️ MVSEC h5 files do not have millisecond to event index mapping. So generate the timestamps_50khz_file and use it!")
             self.logger.info(f"Timestamps loaded from hdf5 file for {dtype} dataset successfully -- 'ms_to_idx' is used!")
 
+        # Check if each elem is greater than the elem to its left
+        assert np.all(self.timestamps[1:] >= self.timestamps[:-1]), "Timestamps file is not uniformly increasing!"
+
         if dtype == "m3ed":
             # We use the "camera" event camera
             self.w, self.h = 1280, 720  #! Important: resolution in the dataset
