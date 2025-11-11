@@ -24,7 +24,9 @@ class BaseExtractor(Dataset):
     def __init__(self, hdf5_file: str, timestamps_50khz_file: str,
                  w: int=1280, h: int=720,
                  time_ctx: int=20000, time_pred: int=20000, bucket: int=1000, max_numevents_ctx: int=800000,
-                 randomize_ctx: bool=True, camera: str="left", dtype: str="m3ed"):
+                 randomize_ctx: bool=True, camera: str="left",
+                 dtype: str="m3ed",
+                 randomize_roi: bool=True):
         """
             Args:
                 hdf5_file: str
@@ -50,7 +52,12 @@ class BaseExtractor(Dataset):
                 camera: str
                     The camera to use. Can be "left" or "right"
                 dtype: str
-                    Dataset type. Can be "m3ed" or "dsec" or "mvsec". Changes some of the resolution and path options based on the dataset
+                    Dataset type. Can be "m3ed" or "dsec" or "mvsec" or "uzhfpv".
+                    Changes some of the resolution and path options based on the dataset
+                randomize_roi: bool
+                    If True, and dataset resolution != target resolution, will fill the ROI randomly.
+                    If dataset res < target, will put the dataset somewhere in the frame (not just in center)
+                    If dataset res > target, will take a randomized crop of target resolution.
         """
         super(BaseExtractor, self).__init__()
         self.logger = logging.getLogger("__main__")
@@ -131,9 +138,11 @@ class BaseExtractor(Dataset):
         self.time_pred = time_pred
         self.randomize_ctx = randomize_ctx
         self.max_numevents_ctx = max_numevents_ctx
+        self.randomize_roi = randomize_roi
         self.metadata = {}
 
         self.trgt_res = (w, h) #! Important: resolution of the output frame
+        self.crop_target = None
 
         # Boolean mask for the pixels where loss is valid
         self.valid_mask = torch.zeros(self.trgt_res, dtype=torch.bool)
@@ -145,56 +154,13 @@ class BaseExtractor(Dataset):
 
         if self.trgt_res[0] >= self.w and self.trgt_res[1] >= self.h:
             self.logger.info(f"Target res {self.trgt_res}, raw resolution {(self.w, self.h)}, downsampling resolution mode!")
-            to_downsample = False
+            self.to_downsample = False
         elif self.trgt_res[0] < self.w and self.trgt_res[1] < self.h:
             self.logger.info(f"Target res {self.trgt_res}, raw resolution {(self.w, self.h)}, upsampling resolution mode!")
-            to_downsample = True
+            self.to_downsample = True
         else:
             raise ValueError(f"Target res {self.trgt_res} must be BOTH larger or smaller than raw resolution {(self.w, self.h)}")
 
-        if to_downsample:
-            # The target res. is smaller than the raw resolution.
-            def get_crop_and_step(raw, des):
-                num_multiples = raw // des
-                crop = (raw - num_multiples * des) // 2
-
-                return crop, num_multiples
-
-            w_crop, w_multiples = get_crop_and_step(self.w, self.trgt_res[0])
-            h_crop, h_multiples = get_crop_and_step(self.h, self.trgt_res[1])
-            self.logger.info(f"Width crop: {w_crop}, Width multiples: {w_multiples}")
-            self.logger.info(f"Height crop: {h_crop}, Height multiples: {h_multiples}")
-
-            def raw_px_to_tgt_px(raw_u, raw_v):
-                tgt_x = (raw_u - w_crop) // w_multiples
-                tgt_y = (raw_v - h_crop) // h_multiples
-                return tgt_x, tgt_y
-
-            self.raw_px_to_tgt_px = raw_px_to_tgt_px
-
-            self.valid_mask[...] = True
-
-        else:
-            # The target res. is larger than the raw resolution.
-
-            #! Important: offset to center in the target frames
-            #* We want to center the events in the target frame if the resolutions don't match
-            trgt_ofs = ((self.trgt_res[0] - self.w) // 2, (self.trgt_res[1] - self.h) // 2)
-
-            def raw_px_to_tgt_px(raw_u, raw_v):
-                tgt_x = raw_u + trgt_ofs[0]
-                tgt_y = raw_v + trgt_ofs[1]
-                return tgt_x, tgt_y
-
-            self.raw_px_to_tgt_px = raw_px_to_tgt_px
-
-            self.valid_mask[trgt_ofs[0]:trgt_ofs[0]+self.w, trgt_ofs[1]:trgt_ofs[1]+self.h] = True
-
-        #! black out the bottom 40 pixels along the height of the frame
-        if self.dtype == "dsec":
-            _, start_y = self.raw_px_to_tgt_px(0, self.h-40)
-            _, end_y = self.raw_px_to_tgt_px(0,self.h)
-            self.valid_mask[:, start_y:end_y] = False
 
     def save_metadata(self, fname: str="metadata.json"):
         folder_path = Path(self.hdf5_fp).parent
@@ -217,54 +183,123 @@ class BaseExtractor(Dataset):
     def get_ctx_fixedtime(self, t0):
         ei = int(self.timestamps[t0 // self.us_to_discretize] - 1)
         si = self.timestamps[(t0 - self.time_ctx) // self.us_to_discretize + 1]
-        totcnt = int(ei - si)
+
+        ctx, self.valid_mask = self._filter_events(si, ei, t0, for_ctx=True)
+        totcnt = ctx.shape[0]
+
+        # Downsample total number of input events
         _used = min(totcnt, self.max_numevents_ctx)
-        ctx = np.empty((_used, 4), dtype=np.int32)
         if totcnt > self.max_numevents_ctx:
             if self.randomize_ctx:
                 indices = np.sort(rng.choice(totcnt, size=self.max_numevents_ctx, replace=False, shuffle=False))
             else:
                 indices = np.linspace(0, totcnt, self.max_numevents_ctx, dtype=np.uint64, endpoint=False)
-            ctx[:,0], ctx[:,1] = self.raw_px_to_tgt_px(self.events_x[si:ei][indices], self.events_y[si:ei][indices])
-            ctx[:,2] = (t0 - self.events_t[si:ei][indices]) // self.bucket
-            ctx[:,3] = self.events_p[si:ei][indices]
-        else:
-            ctx[:,0], ctx[:,1] = self.raw_px_to_tgt_px(self.events_x[si:ei], self.events_y[si:ei])
-            ctx[:,2] = (t0 - self.events_t[si:ei]) // self.bucket
-            ctx[:,3] = self.events_p[si:ei]
-        ctx = self._crop_events(ctx)
-        _used = ctx.shape[0] # need to update this number after cropping
+            ctx = ctx[indices, :]
 
+        _used = ctx.shape[0] # need to update this number after cropping
         #! Ideally we should get rid of the duplicates caused by the bucketing, but it is expensive
         #! And since we work with 1KHz frames, there aren't many duplicates
-        if self.dtype == "mvsec": ctx[:,3][ctx[:,3] == -1] = 0
         ctx = torch.tensor(ctx, dtype=torch.float32) / self.norm_factor
         return ctx, _used
 
     def get_pred_fixedtime(self, t0):
         si = self.timestamps[t0 // self.us_to_discretize]
         ei = int(self.timestamps[(t0 + self.time_pred) // self.us_to_discretize] - 1)
-        totcnt = int(ei - si)
-        pred = np.zeros((totcnt, 4), dtype=np.int32)
-        pred[:, 0], pred[:, 1] = self.raw_px_to_tgt_px(self.events_x[si:ei], self.events_y[si:ei])
-        pred[:,2] = (self.events_t[si:ei] - t0) // self.bucket
-        pred[:,3] = self.events_p[si:ei].astype(np.int8)
-        pred = self._crop_events(pred)
+        pred, _ = self._filter_events(si, ei, t0, for_ctx=False)
         totcnt = pred.shape[0]  # need to update this number after cropping
 
         if self.dtype == "mvsec": pred[:,3][pred[:,3] == -1] = 0
         pred = torch.tensor(pred, dtype=torch.int32)
         return pred, totcnt
 
-    def _crop_events(self, events):
-        valid_x = np.logical_and(events[:, 0] >= 0, events[:, 0] < self.trgt_res[0])
-        valid_y = np.logical_and(events[:, 1] >= 0, events[:, 1] < self.trgt_res[1])
-        valid = valid_x & valid_y
+    def _filter_events(self, start_idx: int, end_idx: int, t0, for_ctx: bool):
+        '''
+        start/end idx: The indices of the event h5 Dataset.
+        t0: Start time of the event sequences.
+        for_ctx: Whether the events are to be generated for the context or prediction vectors.
+              If for context vector, we will use the start time to compute the context window, and generate a center crop.
+              Else, we will use the end time to compute the prediction window, and consume the center crop generated by
+              the previous filter_events call.
 
+        This means that the get_ctx_fixedtime and get_pred_fixedtime methods MUST be called in an interleaved manner.
+        '''
+
+        # Read the raw events
+        valid_mask = torch.zeros(self.trgt_res, dtype=torch.bool)
+        ret = np.empty((end_idx-start_idx, 4), dtype=np.int32)
+        ret[:, 0] = self.events_x[start_idx:end_idx]
+        ret[:, 1] = self.events_y[start_idx:end_idx]
+        if for_ctx:
+            ret[:, 2] = (t0 - self.events_t[start_idx:end_idx]) // self.bucket
+        else:
+            ret[:, 2] = (self.events_t[start_idx:end_idx] - t0) // self.bucket
+        ret[:, 3] = self.events_p[start_idx:end_idx]
+
+        if self.randomize_roi:
+            # Randomly sample the top-left corner of the ROI box
+            # If upsampling, this will be negative; which amounts to a shift INSIDE the roi
+            # If downsampling, this will be positive; which is the expected behaviour
+            diff_x = self.w - self.trgt_res[0]
+            diff_y = self.h - self.trgt_res[1]
+            if for_ctx:
+                xs = rng.integers(min(0, diff_x), max(0, diff_x)+1)
+                ys = rng.integers(min(0, diff_y), max(0, diff_y)+1)
+                self.crop_target = (xs, ys)
+            else:
+                assert self.crop_target is not None
+                xs, ys = self.crop_target
+                self.crop_target = None
+        else:
+            # Take a center crop
+            xs = (self.w - self.trgt_res[0]) // 2
+            ys = (self.h - self.trgt_res[1]) // 2
+
+        # Crop to valid ROI
+        if self.to_downsample:
+            ret = self._crop_events(
+                ret, xs, ys, self.trgt_res[0], self.trgt_res[1])
+            valid_mask[...] = True
+        else:
+            # Here xs/ys is negative.
+            valid_mask[(0-xs):(self.w-xs), (0-ys):(self.h-ys)] = True
+
+        # Shift pixels to target resolution
+        ret[:, 0] -= xs
+        ret[:, 1] -= ys
+        # Check that everything is within the target resolution
+        assert np.all(ret[:, 0] >= 0) and np.all(
+            ret[:, 0] < self.trgt_res[0]), "X coordinates are out of bounds"
+        assert np.all(ret[:, 1] >= 0) and np.all(
+            ret[:, 1] < self.trgt_res[1]), "Y coordinates are out of bounds"
+
+        # Valid box post-processing
+        if self.dtype == "dsec":
+            raw_valid_mask = torch.ones((self.h, self.w), dtype=torch.bool)
+            raw_valid_mask[:, self.h-40:self.h] = False  # invalidate bottom 40 rows
+            tgt_valid_mask = torch.zeros(self.trgt_res, dtype=torch.bool)
+
+            if self.to_downsample:
+                tgt_valid_mask = raw_valid_mask[xs:xs+self.w, ys:ys+self.h]
+            else:
+                tgt_valid_mask[(0-xs):(self.w-xs), (0-ys):(self.h-ys)] = raw_valid_mask
+
+            valid_mask = torch.bitwise_and(tgt_valid_mask, valid_mask)
+
+        # Postprocessing
+        if self.dtype == "mvsec":
+            ret[:, 3][ret[:, 3] == -1] = 0
+
+        return ret, valid_mask
+
+    def _crop_events(self, events, x0, y0, w, h):
+        valid_x = np.logical_and(events[:, 0] >= x0, events[:, 0] < x0 + w)
+        valid_y = np.logical_and(events[:, 1] >= y0, events[:, 1] < y0 + h)
+        valid = valid_x & valid_y
         assert valid.shape[0] == events.shape[0], "Valid mask length should be equal to number of events!"
 
         events = events[valid, :]
         return events
+
 
 class EventDatasetSingleHDF5(BaseExtractor):
     """
