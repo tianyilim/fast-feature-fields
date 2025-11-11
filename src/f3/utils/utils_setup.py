@@ -70,10 +70,16 @@ def setup_accelerate_experiment(args, base_path: str, models_path: str):
     """
     ##################### Accelerate Setup #####################
     gradient_accumulation_steps = args.train["batch"] // args.train["mini_batch"]
+    if args.wandb:
+        experiment_tracker = "wandb"
+    elif args.tensorboard:
+        experiment_tracker = "tensorboard"
+    else:
+        experiment_tracker = None
     accelerator = Accelerator(gradient_accumulation_steps=gradient_accumulation_steps,
-                              log_with="wandb" if args.wandb else None)
+                              log_with=experiment_tracker)
     device = accelerator.device
-    
+
     assert args.train["batch"] % args.train["mini_batch"] == 0, "train_batch should be divisible by mini_batch"
 
     resume = os.path.exists(f"{models_path}/last.pth")
@@ -97,6 +103,9 @@ def setup_accelerate_experiment(args, base_path: str, models_path: str):
             accelerator.init_trackers(project_name="f3", config=args,
                                       init_kwargs={"wandb": {"name": args.name, "id": args.wandb_run_id}})
         logger.info(f"Logging to wandb with name: {args.name} and run_id: {args.wandb_run_id}")
+    elif args.tensorboard:
+        accelerator.init_trackers(project_name="f3", config=args)
+        logger.info(f"Logging to tensorboard with name: {args.name}")
 
     if not resume:
         with open(f"{base_path}/args.yml", "w") as f:

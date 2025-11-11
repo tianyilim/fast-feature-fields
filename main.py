@@ -14,6 +14,7 @@ from f3.utils import (get_dataloaders_from_args, setup_torch, setup_accelerate_e
 parser = argparse.ArgumentParser("Train a feature field on a dataset of events.")
 
 parser.add_argument("--wandb", action="store_true", help="Log to wandb.")
+parser.add_argument("--tensorboard", action="store_true", help="Log to tensorboard.")
 parser.add_argument("--name", type=str, help="Name of the run.")
 parser.add_argument("--conf", type=str, required=True, help="Path to the config file. If provided will load configs from here."+\
                                                             "Rest of the configs will be loaded from the defaults below")
