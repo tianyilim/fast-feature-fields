@@ -92,7 +92,7 @@ def setup_accelerate_experiment(args, base_path: str, models_path: str):
             os.makedirs(f"{base_path}/{dir}", exist_ok=True)
 
     logging.basicConfig(filename=f"{base_path}/exp.log", filemode="a",
-                        level=logging.DEBUG, format="%(levelname)-8s: [%(asctime)s] - %(message)s")
+                        level=logging.INFO, format="%(levelname)-8s: [%(asctime)s] - %(message)s")
     logger = logging.getLogger(__name__)
     '''
     stdout_handler = logging.StreamHandler(sys.stdout)

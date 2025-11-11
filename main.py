@@ -40,9 +40,11 @@ def main():
     models_path = f"outputs/{args.name}/models"
 
     logger, resume, accelerator, device, gradient_accumulation_steps = setup_accelerate_experiment(args, base_path, models_path)
+    '''
     handler = logging.StreamHandler(sys.stdout)
     handler.setLevel(logging.DEBUG)
     logger.addHandler(handler)
+    '''
     print("Starting experiment:", args.name)
 
     train_loader, val_loader = get_dataloaders_from_args(args, logger)
