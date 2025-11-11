@@ -5,6 +5,7 @@ import datetime
 import numpy as np
 import logging
 import sys
+from tqdm import tqdm
 
 from f3 import init_event_model, load_weights_ckpt
 from f3.utils import (get_dataloaders_from_args, setup_torch, setup_accelerate_experiment,
@@ -100,7 +101,7 @@ def main():
     if resume: val_loss, val_acc, val_f1 = np.inf, 0, 0
     else:      val_loss, val_acc, val_f1 = validate(args, eff, val_loader, start, accelerator=accelerator, logger=logger)
 
-    for epoch in range(start, args.epochs):
+    for epoch in tqdm(range(start, args.epochs), desc=args.name, dynamic_ncols=True):
         train(args, eff, train_loader, optimizer, scheduler, epoch, logger=logger,
               accelerator=accelerator, iters_to_accumulate=gradient_accumulation_steps)
 

@@ -21,7 +21,7 @@ def validate_fixed_time(args, eff, val_loader, epoch,
         crop_size, stochastic_rounding, ctx_out_resolution, pred_out_resolution, pred_frame_size = get_crop_targets(args)
 
     for idx, data in tqdm(enumerate(val_loader), total=len(val_loader), disable=not accelerator.is_local_main_process,
-                          desc="Validation"):
+                          desc=f"Validation: Epoch {epoch}", leave=False, dynamic_ncols=True):
         ff_events, pred_events, ff_counts, pred_counts, valid_mask = data # (N,3) or (N,4), (B), (B,W,H,2) or (B,W,H,T,2) #! T: max prediction time bins time_pred//bucket
 
         if not args.polarity[0]: ff_events = ff_events[..., :3] # (B,N,4) -> (B,N,3)
