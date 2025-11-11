@@ -16,7 +16,8 @@ def train_fixed_time(args, eff, train_loader, optimizer, scheduler, epoch,
     if crop_resize_training is not None:
         crop_size, stochastic_rounding, ctx_out_resolution, pred_out_resolution, pred_frame_size = get_crop_targets(args)
 
-    for idx, data in tqdm(enumerate(train_loader), total=len(train_loader), disable=not accelerator.is_local_main_process):
+    for idx, data in tqdm(enumerate(train_loader), total=len(train_loader), disable=not accelerator.is_local_main_process,
+                          desc="Training"):
         ff_events, pred_events, ff_counts, pred_counts, valid_mask = data # (N,3) or (N,4), (B), (B,W,H,2) or (B,W,H,T,2), (B, W, H) #! T: max prediction time bins time_pred//bucket
 
         if not args.polarity[0]: ff_events = ff_events[..., :3]
@@ -65,4 +66,5 @@ def train_fixed_time(args, eff, train_loader, optimizer, scheduler, epoch,
         logger.info("#"*50)
 
         if args.wandb or args.tensorboard:
-            accelerator.log({"train_acc": train_acc, "train_loss": train_loss, "train_f1": train_f1, "epoch": epoch})
+            accelerator.log({"train_acc": train_acc, "train_loss": train_loss, "train_f1": train_f1, "epoch": epoch},
+                            step=epoch)
