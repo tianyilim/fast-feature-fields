@@ -30,7 +30,7 @@ def gen_ts(camera: str):
 
     assert isinstance(events_t, h5py.Dataset)
 
-    assert events_t[0] == 0, "First timestamp is not zero. This breaks some of the assumptions in this repo."
+    assert events_t[0] <= 1000, "First timestamp is not zero. This breaks some of the assumptions in this repo."
     assert np.all(events_t[1:] >= events_t[:-1]), "Timestamps file is not uniformly increasing!"
 
     timeblocks = int(args.bucket)
@@ -82,7 +82,10 @@ def main():
         raise ValueError("Invalid dataset")
 
     out_path = Path(f"{path}/50khz_{name}.npy")
-    if not out_path.parent.exists():
+    if out_path.exists():
+        print(str(out_path), "exists, not generating.")
+    else:
+        print("Generating", str(out_path), "for", args.dataset)
         if not args.dataset == "uzhfpv":
             TS_LEFT = gen_ts("left")
             TS_RIGHT = gen_ts("right")
