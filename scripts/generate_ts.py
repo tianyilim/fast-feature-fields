@@ -1,8 +1,9 @@
-import h5py
 import argparse
+from pathlib import Path
+
+import h5py
 import numpy as np
 from tqdm import tqdm
-
 
 parser = argparse.ArgumentParser()
 
@@ -28,6 +29,7 @@ def gen_ts(camera: str):
     assert isinstance(events_t, h5py.Dataset)
 
     assert events_t[0] == 0, "First timestamp is not zero. This breaks some of the assumptions in this repo."
+    assert np.all(events_t[1:] >= events_t[:-1]), "Timestamps file is not uniformly increasing!"
 
     timeblocks = int(args.bucket)
     FREQ = 1e6/timeblocks
@@ -41,6 +43,7 @@ def gen_ts(camera: str):
         start_event_index = start_index
         found_end = False
         counter = 0
+        end_event_index = 0
         while not found_end:
             end_event_index = np.searchsorted(events_t[start_event_index+counter*1000:start_event_index+(counter+1)*1000], till_when)
             if end_event_index == 1000:
@@ -54,6 +57,7 @@ def gen_ts(camera: str):
     start_index = 0
     for block in tqdm(range(0, num_ts)):
         end_index = return_index(start_index, timeblocks*block)
+        assert end_index >= start_index, f"{block}/{num_ts}, {start_index=}, {end_index=}" 
         start_index = end_index
         TS[block] = end_index
     return TS
@@ -75,15 +79,19 @@ def main():
     else:
         raise ValueError("Invalid dataset")
 
-    if not args.dataset == "uzhfpv":
-        TS_LEFT = gen_ts("left")
-        TS_RIGHT = gen_ts("right")
-        TS = {"left": TS_LEFT, "right": TS_RIGHT}
-    else:
-        TS_LEFT = gen_ts("") # This dataset is monocular, but we just use "left" as convention
-        TS = {"left": TS_LEFT}
+    out_path = Path(f"{path}/50khz_{name}.npy")
+    if not out_path.parent.exists():
+        if not args.dataset == "uzhfpv":
+            TS_LEFT = gen_ts("left")
+            TS_RIGHT = gen_ts("right")
+            TS = {"left": TS_LEFT, "right": TS_RIGHT}
+        else:
+            TS_LEFT = gen_ts("") # This dataset is monocular, but we just use "left" as convention
+            TS = {"left": TS_LEFT}
 
-    np.save(f"{path}/50khz_{name}.npy", TS)
+        np.save(out_path,
+                TS # type: ignore
+            )
 
 
 if __name__ == "__main__":
