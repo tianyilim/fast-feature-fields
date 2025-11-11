@@ -10,6 +10,8 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--data_h5", required=True, type=str, help="H5 file path with sensor data or the parent folder in case of dsec")
 parser.add_argument("--bucket", type=int, default=20, help="Bucket size in us")
 parser.add_argument("--dataset", type=str, default="m3ed", choices=["m3ed", "dsec", "mvsec", "uzhfpv"], help="Dataset name")
+parser.add_argument("--validate", action="store_true", help="Validate generated timestamps")
+
 
 args = parser.parse_args()
 
@@ -90,8 +92,67 @@ def main():
             TS = {"left": TS_LEFT}
 
         np.save(out_path,
-                TS # type: ignore
-            )
+                TS  # type: ignore
+                )
+
+    # Validate existing timestamps
+    if args.validate:
+        import matplotlib.pyplot as plt
+        TS = np.load(out_path, allow_pickle=True).item()["left"]
+        time_ctx_us = 20_000
+        min_numevents_ctx = 1000
+        end_time = len(TS) * 20
+
+        valid_timestamps = []
+        invalid_timestamps = []
+        start_time = time_ctx_us               # in us
+        end_time = int(end_time - time_ctx_us)  # in us
+        for t0 in tqdm(range(start_time, end_time, time_ctx_us), desc="Generating valid timestamps"):
+            # Count: The number of events inside the context window
+            # Same logic found in dataloader.py
+            cnt = TS[t0 // 20] - TS[((t0 - time_ctx_us) // 20)]
+            if cnt > 0 and (cnt-1) >= min_numevents_ctx:
+                valid_timestamps.append(t0)
+            else:
+                invalid_timestamps.append(t0)
+
+        # Number of data points we have for training and testing
+        numblocks = len(valid_timestamps)
+        print(f"{numblocks} valid blocks found!")
+
+        plt.figure()
+        for invalid_t in invalid_timestamps:
+            plt.axvline(x=invalid_t, c='tab:orange', alpha=0.25)
+        plt.axvline(x=valid_timestamps[0])
+        plt.axvline(x=valid_timestamps[-1])
+
+        plt.grid()
+
+        timestamp = []
+        end_index = []
+
+        for t0 in tqdm(valid_timestamps, desc="Validating points"):
+            assert t0 > time_ctx_us, f"query time {t0=} is smaller than context window!"
+            _e_time_index = t0 // 20
+            ei = np.int64(TS[_e_time_index] - 1)
+            _s_time_index = ((t0 - time_ctx_us) // 20) + 1
+            si = np.int64(TS[_s_time_index])
+
+            # If this shows, then we have a problem.
+            if not ei >= si:
+                print(f"{_s_time_index=}")
+                print(f"{_e_time_index=}")
+                print(f"{si=}")
+                print(f"{ei=}")
+                print(len(TS))
+                plt.axvline(x=t0, c='r')
+
+            timestamp.append(t0)
+            end_index.append(ei)
+
+        plt.plot(timestamp, end_index, '.-', label="Timestamp")
+        plt.legend()
+        plt.savefig(f"{name}_validation.png")
 
 
 if __name__ == "__main__":
