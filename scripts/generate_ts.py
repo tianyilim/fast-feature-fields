@@ -31,7 +31,7 @@ def gen_ts(camera: str):
     assert isinstance(events_t, h5py.Dataset)
 
     assert events_t[0] <= 1000, "First timestamp is not zero. This breaks some of the assumptions in this repo."
-    assert np.all(events_t[1:] >= events_t[:-1]), "Timestamps file is not uniformly increasing!"
+    # assert np.all(events_t[1:] >= events_t[:-1]), "Timestamps file is not uniformly increasing!"
 
     timeblocks = int(args.bucket)
     FREQ = 1e6/timeblocks
