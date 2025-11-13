@@ -23,6 +23,15 @@ ln -nsf $base_path/falcon_outdoor_night_high_beams data/
 ln -nsf $base_path/falcon_outdoor_night_penno_parking_1 data/
 ln -nsf $base_path/falcon_outdoor_night_penno_parking_2 data/
 
+ln -nsf $base_path/falcon_forest_into_forest_1 data/
+ln -nsf $base_path/falcon_forest_into_forest_2 data/
+ln -nsf $base_path/falcon_forest_into_forest_4 data/
+ln -nsf $base_path/falcon_forest_road_1 data/
+ln -nsf $base_path/falcon_forest_road_2 data/
+ln -nsf $base_path/falcon_forest_road_3 data/
+ln -nsf $base_path/falcon_forest_road_forest data/
+ln -nsf $base_path/falcon_forest_up_down data/
+ln -nsf $base_path/falcon_into_forest_3 data/
 
 # Generate timestamps for the M3ED dataset
 python3 scripts/generate_ts.py --data_h5 data/falcon_indoor_flight_1/falcon_indoor_flight_1_data.h5 --dataset "m3ed"
@@ -42,3 +51,13 @@ python3 scripts/generate_ts.py --data_h5 data/falcon_outdoor_day_penno_trees/fal
 python3 scripts/generate_ts.py --data_h5 data/falcon_outdoor_night_high_beams/falcon_outdoor_night_high_beams_data.h5 --dataset "m3ed"
 python3 scripts/generate_ts.py --data_h5 data/falcon_outdoor_night_penno_parking_1/falcon_outdoor_night_penno_parking_1_data.h5 --dataset "m3ed"
 python3 scripts/generate_ts.py --data_h5 data/falcon_outdoor_night_penno_parking_2/falcon_outdoor_night_penno_parking_2_data.h5 --dataset "m3ed"
+
+python3 scripts/generate_ts.py --data_h5 data/falcon_forest_into_forest_1/falcon_forest_into_forest_1_data.h5 --dataset "m3ed"
+python3 scripts/generate_ts.py --data_h5 data/falcon_forest_into_forest_2/falcon_forest_into_forest_2_data.h5 --dataset "m3ed"
+python3 scripts/generate_ts.py --data_h5 data/falcon_forest_into_forest_4/falcon_forest_into_forest_4_data.h5 --dataset "m3ed"
+python3 scripts/generate_ts.py --data_h5 data/falcon_forest_road_1/falcon_forest_road_1_data.h5 --dataset "m3ed"
+python3 scripts/generate_ts.py --data_h5 data/falcon_forest_road_2/falcon_forest_road_2_data.h5 --dataset "m3ed"
+python3 scripts/generate_ts.py --data_h5 data/falcon_forest_road_3/falcon_forest_road_3_data.h5 --dataset "m3ed"
+python3 scripts/generate_ts.py --data_h5 data/falcon_forest_road_forest/falcon_forest_road_forest_data.h5 --dataset "m3ed"
+python3 scripts/generate_ts.py --data_h5 data/falcon_forest_up_down/falcon_forest_up_down_data.h5 --dataset "m3ed"
+python3 scripts/generate_ts.py --data_h5 data/falcon_into_forest_3/falcon_into_forest_3_data.h5 --dataset "m3ed"
