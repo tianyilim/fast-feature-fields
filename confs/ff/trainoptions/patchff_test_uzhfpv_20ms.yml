@@ -3,14 +3,14 @@ lr: 5.0e-5 # Learning rate
 lr_end_factor: 0.1 # Linear Scheduler learning rate end factor
 epochs: 200 # Number of epochs
 log_interval: 20 # Log interval in epochs
-val_interval: 5 # Validation interval in epochs
+val_interval: 2 # Validation interval in epochs
 loss_fn: VoxelFocalLoss # Loss function
 polarity: [False, False] # Use polarity for the training
 
 train:
   num_workers: 4 # Number of workers for the dataloader
-  batch: 8 # Batch size of event blocks tuned to a 24GB GPU
-  mini_batch: 8 # Mini batch size of events
+  batch: 32 # Batch size of event blocks tuned to a 24GB GPU
+  mini_batch: 4 # Mini batch size of events
   datasets:
   - confs/ff/dataoptions/test_uzhpfv_train_20ms.yml
 
