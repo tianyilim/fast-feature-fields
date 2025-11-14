@@ -31,7 +31,6 @@ def gen_ts(camera: str):
     assert isinstance(events_t, h5py.Dataset)
 
     assert events_t[0] <= 1000, "First timestamp is not zero. This breaks some of the assumptions in this repo."
-    # assert np.all(events_t[1:] >= events_t[:-1]), "Timestamps file is not uniformly increasing!"
 
     timeblocks = int(args.bucket)
     FREQ = 1e6/timeblocks
@@ -47,7 +46,9 @@ def gen_ts(camera: str):
         counter = 0
         end_event_index = 0
         while not found_end:
-            end_event_index = np.searchsorted(events_t[start_event_index+counter*1000:start_event_index+(counter+1)*1000], till_when)
+            curr_event_slice = events_t[start_event_index+counter*1000:start_event_index+(counter+1)*1000]
+            assert np.all(curr_event_slice[1:] >= curr_event_slice[:-1]), "Timestamps file is not uniformly increasing!"
+            end_event_index = np.searchsorted(curr_event_slice, till_when)
             if end_event_index == 1000:
                 counter += 1
             else:
