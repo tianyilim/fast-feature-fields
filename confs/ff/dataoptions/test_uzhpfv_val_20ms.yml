@@ -18,12 +18,6 @@ datasets:
   dtype: m3ed
   range: [0, 8, 1]
 
-- dataset_path: data/falcon_into_forest_3/falcon_into_forest_3_data.h5
-  timestamps_path: data/falcon_into_forest_3/50khz_falcon_into_forest_3_data.npy
-  camera: left
-  dtype: m3ed
-  range: [0, 8, 1]
-
 - dataset_path: data/falcon_outdoor_day_fast_flight_3/falcon_outdoor_day_fast_flight_3_data.h5
   timestamps_path: data/falcon_outdoor_day_fast_flight_3/50khz_falcon_outdoor_day_fast_flight_3_data.npy
   camera: left
