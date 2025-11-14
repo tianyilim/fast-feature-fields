@@ -154,10 +154,10 @@ class BaseExtractor(Dataset):
         ], dtype=torch.float32)[None, :]
 
         if self.trgt_res[0] >= self.w and self.trgt_res[1] >= self.h:
-            self.logger.info(f"Target res {self.trgt_res}, raw resolution {(self.w, self.h)}, downsampling resolution mode!")
+            self.logger.info(f"Target res {self.trgt_res}, raw resolution {(self.w, self.h)}, upsampling resolution mode!")
             self.to_downsample = False
         elif self.trgt_res[0] < self.w and self.trgt_res[1] < self.h:
-            self.logger.info(f"Target res {self.trgt_res}, raw resolution {(self.w, self.h)}, upsampling resolution mode!")
+            self.logger.info(f"Target res {self.trgt_res}, raw resolution {(self.w, self.h)}, downsampling resolution mode!")
             self.to_downsample = True
         else:
             raise ValueError(f"Target res {self.trgt_res} must be BOTH larger or smaller than raw resolution {(self.w, self.h)}")
