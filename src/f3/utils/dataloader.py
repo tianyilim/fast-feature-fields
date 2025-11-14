@@ -373,7 +373,7 @@ class EventDatasetSingleHDF5(BaseExtractor):
                       self.timestamps[(t0 - self.time_ctx) // self.us_to_discretize]
                 if cnt > 0 and (cnt-1) >= self.min_numevents_ctx:
                     self.valid_0_points.append(t0)
-                    self.logger.info(f"Valid point: {t0}!")
+                    self.logger.debug(f"Valid point: {t0}!")
             self.numblocks = len(self.valid_0_points) # number of data points we have for training and testing
             self.logger.info(f"Dataset {Path(self.hdf5_fp).name} loaded successfully!: {self.numblocks} valid blocks found!")
             self.metadata = {
