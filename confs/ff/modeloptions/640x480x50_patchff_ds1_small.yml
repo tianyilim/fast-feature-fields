@@ -17,6 +17,3 @@ multi_hash_encoder:
 patch_size: 1
 use_decoder_block: false
 variable_mode: true
-
-# Receptive field: 63x63
-# Feature downsample: 1x1

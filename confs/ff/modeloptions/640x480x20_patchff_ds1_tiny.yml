@@ -11,7 +11,7 @@ frame_sizes: [640, 480, 20]
 multi_hash_encoder:
   coarsest_resolution: [8, 8, 1]
   feature_size: 2
-  finest_resolution: [320, 180, 8]
+  finest_resolution: [320, 240, 8]
   levels: 4
   log2_entries_per_level: 19
 patch_size: 1

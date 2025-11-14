@@ -31,4 +31,4 @@ frame_sizes: [640, 480] # Size of the frame
 
 # Feature Field
 eventff:
-  config: confs/ff/modeloptions/640x480x50_patchff_ds1_small.yml
+  config: confs/ff/modeloptions/640x480x20_patchff_ds1_small.yml
