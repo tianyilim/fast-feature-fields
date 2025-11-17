@@ -64,7 +64,7 @@ class BaseExtractor(Dataset):
         self.hdf5_fp = hdf5_file
         self.hdf5_file = h5py.File(hdf5_file, "r")
 
-        ALLOWED_DATASETS = ["m3ed", "dsec", "mvsec", "tartanair-v2"]
+        ALLOWED_DATASETS = ["m3ed", "dsec", "mvsec", "tartanair-v2", "uzhfpv"]
         assert dtype in ALLOWED_DATASETS, \
             f"Invalid dataset type {dtype}! Allowed types are {ALLOWED_DATASETS}"
 
