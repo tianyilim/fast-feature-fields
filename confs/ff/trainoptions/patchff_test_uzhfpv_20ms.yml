@@ -1,7 +1,7 @@
 # Training options
 lr: 5.0e-5 # Learning rate
 lr_end_factor: 0.1 # Linear Scheduler learning rate end factor
-epochs: 200 # Number of epochs
+epochs: 100 # Number of epochs
 log_interval: 20 # Log interval in epochs
 val_interval: 2 # Validation interval in epochs
 loss_fn: VoxelFocalLoss # Loss function
@@ -31,4 +31,4 @@ frame_sizes: [640, 480] # Size of the frame
 
 # Feature Field
 eventff:
-  config: confs/ff/modeloptions/640x480x20_patchff_ds1_small.yml
+  config: confs/ff/modeloptions/640x480x20_patchff_ds1_small_v1.yml
