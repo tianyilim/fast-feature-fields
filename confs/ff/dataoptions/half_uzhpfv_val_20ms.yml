@@ -1,0 +1,85 @@
+datasets:
+
+- dataset_path: data/falcon_forest_into_forest_4/falcon_forest_into_forest_4_data.h5
+  timestamps_path: data/falcon_forest_into_forest_4/50khz_falcon_forest_into_forest_4_data.npy
+  camera: left
+  dtype: m3ed
+  range: [0, 32, 1]
+
+- dataset_path: data/falcon_forest_road_3/falcon_forest_road_3_data.h5
+  timestamps_path: data/falcon_forest_road_3/50khz_falcon_forest_road_3_data.npy
+  camera: left
+  dtype: m3ed
+  range: [0, 32, 1]
+
+# - dataset_path: data/falcon_indoor_flight_3/falcon_indoor_flight_3_data.h5
+#   timestamps_path: data/falcon_indoor_flight_3/50khz_falcon_indoor_flight_3_data.npy
+#   camera: left
+#   dtype: m3ed
+#   range: [0, 32, 1]
+
+# - dataset_path: data/falcon_outdoor_day_fast_flight_3/falcon_outdoor_day_fast_flight_3_data.h5
+#   timestamps_path: data/falcon_outdoor_day_fast_flight_3/50khz_falcon_outdoor_day_fast_flight_3_data.npy
+#   camera: left
+#   dtype: m3ed
+#   range: [0, 32, 1]
+
+- dataset_path: data/falcon_outdoor_day_penno_parking_3/falcon_outdoor_day_penno_parking_3_data.h5
+  timestamps_path: data/falcon_outdoor_day_penno_parking_3/50khz_falcon_outdoor_day_penno_parking_3_data.npy
+  camera: left
+  dtype: m3ed
+  range: [0, 32, 1]
+
+- dataset_path: data/falcon_outdoor_day_penno_plaza/falcon_outdoor_day_penno_plaza_data.h5
+  timestamps_path: data/falcon_outdoor_day_penno_plaza/50khz_falcon_outdoor_day_penno_plaza_data.npy
+  camera: left
+  dtype: m3ed
+  range: [0, 32, 1]
+
+# - dataset_path: data/falcon_outdoor_night_penno_parking_2/falcon_outdoor_night_penno_parking_2_data.h5
+#   timestamps_path: data/falcon_outdoor_night_penno_parking_2/50khz_falcon_outdoor_night_penno_parking_2_data.npy
+#   camera: left
+#   dtype: m3ed
+#   range: [0, 32, 1]
+
+# - dataset_path: data/indoor_45_9_davis_with_gt/indoor_45_9_davis_with_gt.h5
+#   timestamps_path: data/indoor_45_9_davis_with_gt/50khz_indoor_45_9_davis_with_gt.npy
+#   camera: left
+#   dtype: uzhfpv
+#   range: [0, 24, 1]
+
+- dataset_path: data/indoor_45_14_davis_with_gt/indoor_45_14_davis_with_gt.h5
+  timestamps_path: data/indoor_45_14_davis_with_gt/50khz_indoor_45_14_davis_with_gt.npy
+  camera: left
+  dtype: uzhfpv
+  range: [0, 24, 1]
+
+- dataset_path: data/indoor_forward_3_davis_with_gt/indoor_forward_3_davis_with_gt.h5
+  timestamps_path: data/indoor_forward_3_davis_with_gt/50khz_indoor_forward_3_davis_with_gt.npy
+  camera: left
+  dtype: uzhfpv
+  range: [0, 24, 1]
+
+# - dataset_path: data/indoor_forward_9_davis_with_gt/indoor_forward_9_davis_with_gt.h5
+#   timestamps_path: data/indoor_forward_9_davis_with_gt/50khz_indoor_forward_9_davis_with_gt.npy
+#   camera: left
+#   dtype: uzhfpv
+#   range: [0, 24, 1]
+
+# - dataset_path: data/outdoor_45_2_davis/outdoor_45_2_davis.h5
+#   timestamps_path: data/outdoor_45_2_davis/50khz_outdoor_45_2_davis.npy
+#   camera: left
+#   dtype: uzhfpv
+#   range: [0, 24, 1]
+
+- dataset_path: data/outdoor_forward_2_davis/outdoor_forward_2_davis.h5
+  timestamps_path: data/outdoor_forward_2_davis/50khz_outdoor_forward_2_davis.npy
+  camera: left
+  dtype: uzhfpv
+  range: [0, 24, 1]
+
+- dataset_path: data/outdoor_forward_9_davis/outdoor_forward_9_davis.h5
+  timestamps_path: data/outdoor_forward_9_davis/50khz_outdoor_forward_9_davis.npy
+  camera: left
+  dtype: uzhfpv
+  range: [0, 24, 1]
