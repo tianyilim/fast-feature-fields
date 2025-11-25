@@ -8,15 +8,15 @@ datasets:
 
 - dataset_path: data/falcon_forest_road_3/falcon_forest_road_3_data.h5
   timestamps_path: data/falcon_forest_road_3/50khz_falcon_forest_road_3_data.npy
-  camera: left
+  camera: right
   dtype: m3ed
   range: [0, 32, 1]
 
-# - dataset_path: data/falcon_indoor_flight_3/falcon_indoor_flight_3_data.h5
-#   timestamps_path: data/falcon_indoor_flight_3/50khz_falcon_indoor_flight_3_data.npy
-#   camera: left
-#   dtype: m3ed
-#   range: [0, 32, 1]
+- dataset_path: data/falcon_indoor_flight_3/falcon_indoor_flight_3_data.h5
+  timestamps_path: data/falcon_indoor_flight_3/50khz_falcon_indoor_flight_3_data.npy
+  camera: left
+  dtype: m3ed
+  range: [0, 32, 1]
 
 # - dataset_path: data/falcon_outdoor_day_fast_flight_3/falcon_outdoor_day_fast_flight_3_data.h5
 #   timestamps_path: data/falcon_outdoor_day_fast_flight_3/50khz_falcon_outdoor_day_fast_flight_3_data.npy
@@ -32,7 +32,7 @@ datasets:
 
 - dataset_path: data/falcon_outdoor_day_penno_plaza/falcon_outdoor_day_penno_plaza_data.h5
   timestamps_path: data/falcon_outdoor_day_penno_plaza/50khz_falcon_outdoor_day_penno_plaza_data.npy
-  camera: left
+  camera: right
   dtype: m3ed
   range: [0, 32, 1]
 
