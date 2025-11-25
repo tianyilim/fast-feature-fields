@@ -6,11 +6,11 @@ datasets:
   dtype: m3ed
   range: [0, 16, 1]
 
-# - dataset_path: data/falcon_forest_into_forest_2/falcon_forest_into_forest_2_data.h5
-#   timestamps_path: data/falcon_forest_into_forest_2/50khz_falcon_forest_into_forest_2_data.npy
-#   camera: left
-#   dtype: m3ed
-#   range: [0, 16, 1]
+- dataset_path: data/falcon_forest_into_forest_2/falcon_forest_into_forest_2_data.h5
+  timestamps_path: data/falcon_forest_into_forest_2/50khz_falcon_forest_into_forest_2_data.npy
+  camera: left
+  dtype: m3ed
+  range: [0, 16, 1]
 
 - dataset_path: data/falcon_forest_road_1/falcon_forest_road_1_data.h5
   timestamps_path: data/falcon_forest_road_1/50khz_falcon_forest_road_1_data.npy

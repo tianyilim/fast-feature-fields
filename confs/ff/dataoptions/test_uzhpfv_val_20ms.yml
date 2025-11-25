@@ -4,10 +4,10 @@ datasets:
   timestamps_path: data/falcon_forest_into_forest_4/50khz_falcon_forest_into_forest_4_data.npy
   camera: left
   dtype: m3ed
-  range: [0, 32, 1]
+  range: [0, 64, 1]
 
 - dataset_path: data/indoor_45_14_davis_with_gt/indoor_45_14_davis_with_gt.h5
   timestamps_path: data/indoor_45_14_davis_with_gt/50khz_indoor_45_14_davis_with_gt.npy
   camera: left
   dtype: uzhfpv
-  range: [0, 24, 1]
+  range: [0, 48, 1]
