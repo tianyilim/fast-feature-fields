@@ -26,7 +26,7 @@ class BaseExtractor(Dataset):
                  time_ctx: int=20000, time_pred: int=20000, bucket: int=1000, max_numevents_ctx: int=800000,
                  randomize_ctx: bool=True, camera: str="left",
                  dtype: str="m3ed",
-                 randomize_roi: bool=True):
+                 randomize_roi: bool=False):
         """
             Args:
                 hdf5_file: str
